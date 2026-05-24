@@ -214,14 +214,31 @@ export function Portfolio() {
                 {/* Spacer to push bottom strip down */}
                 <div className="flex-1" />
 
-                {/* Bottom strip - 80px height, pinned to bottom with mt-auto */}
-                <div className="flex h-[80px] items-center justify-between border-t border-foreground bg-background px-5 mt-auto shrink-0">
-                  <span className="text-xs font-medium uppercase tracking-[0.15em] text-foreground">
-                    {project.category}
-                  </span>
-                  <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                    {project.packageName}
-                  </span>
+                {/* Bottom strip - 120px height with arrows inside */}
+                <div className="flex h-[120px] items-center border-t border-foreground bg-background px-6 mt-auto shrink-0">
+                  {/* Left arrow */}
+                  <div className="w-8 h-8 flex items-center justify-center text-foreground/40">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 3L5 7L9 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+
+                  {/* Center content - project name left, package right */}
+                  <div className="flex-1 flex items-center justify-between px-4">
+                    <span className="text-xs font-medium uppercase tracking-[0.15em] text-foreground">
+                      {project.category}
+                    </span>
+                    <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                      {project.packageName}
+                    </span>
+                  </div>
+
+                  {/* Right arrow */}
+                  <div className="w-8 h-8 flex items-center justify-center text-foreground/40">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 3L9 7L5 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
               </button>
             ))}
