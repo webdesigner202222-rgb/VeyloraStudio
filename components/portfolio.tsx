@@ -239,8 +239,26 @@ export function Portfolio() {
           }}
           onClick={closeModal}
         >
+          {/* Navigation arrows - outside modal */}
+          <button
+            onClick={handleButtonClick(() => goToProject('prev'))}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-background/90 text-foreground text-xl shadow-lg hover:bg-background transition-all duration-200"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+            aria-label="Poprzedni projekt"
+          >
+            {"\u2190"}
+          </button>
+          <button
+            onClick={handleButtonClick(() => goToProject('next'))}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-background/90 text-foreground text-xl shadow-lg hover:bg-background transition-all duration-200"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+            aria-label="Nastepny projekt"
+          >
+            {"\u2192"}
+          </button>
+
           <div
-            className="relative flex max-h-[85vh] w-[600px] flex-col overflow-hidden bg-background mx-4"
+            className="relative flex max-h-[85vh] w-[700px] max-w-[calc(100vw-140px)] flex-col overflow-hidden bg-background"
             style={{
               borderRadius: '20px',
               opacity: modalVisible ? 1 : 0,
@@ -257,24 +275,6 @@ export function Portfolio() {
               className="absolute right-4 top-4 z-10 text-2xl leading-none text-foreground transition-opacity hover:opacity-70"
             >
               {"\u00D7"}
-            </button>
-
-            {/* Navigation arrows inside modal */}
-            <button
-              onClick={handleButtonClick(() => goToProject('prev'))}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-background/90 text-foreground text-xl shadow-lg hover:bg-background transition-all duration-200"
-              style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
-              aria-label="Poprzedni projekt"
-            >
-              {"\u2190"}
-            </button>
-            <button
-              onClick={handleButtonClick(() => goToProject('next'))}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-background/90 text-foreground text-xl shadow-lg hover:bg-background transition-all duration-200"
-              style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
-              aria-label="Nastepny projekt"
-            >
-              {"\u2192"}
             </button>
 
             {/* Modal header - sticky */}
