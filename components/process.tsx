@@ -36,33 +36,9 @@ export function Process() {
   const [overlayVisible, setOverlayVisible] = useState(false)
   const [cardAnimating, setCardAnimating] = useState<'none' | 'next' | 'prev'>('none')
   const [checkmarkDrawn, setCheckmarkDrawn] = useState(false)
-  const [hasAnimated, setHasAnimated] = useState(false)
-  const sectionRef = useRef<HTMLElement>(null)
   const touchStartX = useRef<number | null>(null)
 
   const totalCards = cards.length
-
-  // Entrance animation observer
-  useEffect(() => {
-    const section = sectionRef.current
-    if (!section || hasAnimated) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !hasAnimated) {
-            setHasAnimated(true)
-            observer.disconnect()
-          }
-        })
-      },
-      { threshold: 0.3 }
-    )
-
-    observer.observe(section)
-
-    return () => observer.disconnect()
-  }, [hasAnimated])
 
   const openOverlay = () => {
     setIsOpen(true)
@@ -151,7 +127,7 @@ export function Process() {
     touchStartX.current = null
   }
 
-  // Click animation for arrow buttons
+  // Click animation for arrow buttons - use class toggle to avoid breaking transform
   const handleArrowClick = (callback: () => void) => (e: React.MouseEvent<HTMLButtonElement>) => {
     const button = e.currentTarget
     button.classList.add('scale-[0.88]')
@@ -189,6 +165,7 @@ export function Process() {
     const diff = index - currentCard
     
     if (diff === 0) {
+      // Current card
       let transform = 'translateX(0) translateY(0) scale(1)'
       let opacity = 1
       
@@ -207,6 +184,7 @@ export function Process() {
         transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
       }
     } else if (diff === 1) {
+      // Next card (behind) - scale(0.96), offset 8px, opacity 0.5
       return {
         transform: 'translateY(8px) scale(0.96)',
         opacity: 0.5,
@@ -214,6 +192,7 @@ export function Process() {
         transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
       }
     } else if (diff === 2) {
+      // Second next card - scale(0.92), offset 16px, opacity 0.3
       return {
         transform: 'translateY(16px) scale(0.92)',
         opacity: 0.3,
@@ -221,6 +200,7 @@ export function Process() {
         transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
       }
     } else if (diff === 3) {
+      // Third next card - scale(0.88), offset 24px, opacity 0.15
       return {
         transform: 'translateY(24px) scale(0.88)',
         opacity: 0.15,
@@ -228,6 +208,7 @@ export function Process() {
         transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
       }
     } else if (diff < 0) {
+      // Previous cards (hidden to the left)
       return {
         transform: 'translateX(-100%) scale(0.9)',
         opacity: 0,
@@ -235,6 +216,7 @@ export function Process() {
         transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
       }
     }
+    // Cards far ahead
     return {
       transform: 'translateY(32px) scale(0.84)',
       opacity: 0,
@@ -244,40 +226,23 @@ export function Process() {
   }
 
   return (
-    <section id="proces" ref={sectionRef} className="border-y border-foreground bg-secondary py-20">
+    <section id="proces" className="border-y border-foreground bg-secondary py-20">
       <div className="mx-auto max-w-7xl px-6 lg:px-8 text-center">
-        {/* Label with entrance animation */}
-        <p 
-          className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground"
-          style={{
-            opacity: hasAnimated ? 1 : 0,
-            transition: 'opacity 0.4s ease-out',
-          }}
-        >
+        {/* Label */}
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
           — Proces
         </p>
 
-        {/* Headline with clip-path reveal animation */}
-        <h2 
-          className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl"
-          style={{
-            clipPath: hasAnimated ? 'inset(0 0 0 0)' : 'inset(0 100% 0 0)',
-            transition: 'clip-path 0.6s ease-out 0.2s',
-          }}
-        >
+        {/* Headline - centered */}
+        <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
           Jak wyglada wspolpraca z nami
         </h2>
 
-        {/* Trigger Button with scale animation */}
+        {/* Trigger Button - centered, pill style */}
         <div className="mt-8 flex justify-center">
           <button
             onClick={openOverlay}
             className="group flex items-center gap-3 rounded-full border-[1.5px] border-foreground bg-transparent px-8 py-3.5 text-sm font-medium text-foreground transition-all duration-300 hover:bg-foreground hover:text-background"
-            style={{
-              opacity: hasAnimated ? 1 : 0,
-              transform: hasAnimated ? 'scale(1)' : 'scale(0.9)',
-              transition: 'opacity 0.5s ease-out 0.4s, transform 0.5s ease-out 0.4s, background-color 0.3s, color 0.3s',
-            }}
           >
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z"/>
@@ -314,7 +279,7 @@ export function Process() {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Navigation Arrows */}
+            {/* Navigation Arrows - chevron icons, both at exact same vertical position */}
             <button
               onClick={handleArrowClick(goPrev)}
               disabled={currentCard === 0 && !showThankYou}
