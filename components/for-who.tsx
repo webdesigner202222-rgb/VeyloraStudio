@@ -33,70 +33,33 @@ const industries = [
     desc: "Kluby fitness i trenerzy personalni.",
     examples: ["Grafik zajęć", "Karnety", "Trenerzy"],
   },
-  {
-    title: "Hotele",
-    desc: "Butikowe, apartamentowe i pensjonaty.",
-    examples: ["Rezerwacje pokoi", "Cennik", "Galeria"],
-  },
-  {
-    title: "Psycholodzy",
-    desc: "Gabinety psychologiczne i coachingowe.",
-    examples: ["Specjalizacje", "Rezerwacja", "O terapeucie"],
-  },
-  {
-    title: "Architekci",
-    desc: "Biura projektowe i architektura wnętrz.",
-    examples: ["Portfolio", "Realizacje", "Kontakt"],
-  },
-  {
-    title: "Fotografowie",
-    desc: "Studia fotograficzne i fotografia ślubna.",
-    examples: ["Portfolio", "Cennik", "Rezerwacja sesji"],
-  },
-  {
-    title: "Szkoły językowe",
-    desc: "Kursy językowe i korepetytorzy.",
-    examples: ["Oferta kursów", "Grafik", "Zapisy online"],
-  },
-  {
-    title: "Firmy budowlane",
-    desc: "Wykonawcy, deweloperzy i wykończenia.",
-    examples: ["Realizacje", "Wycena", "Obszar działania"],
-  },
 ]
 
-// Card dimensions
-const CARD_WIDTH = 280
-const CARD_GAP = 32
+const CARD_SIZE = 300
+const CARD_GAP = 24
+const PEEK_WIDTH = 40
+const TRANSITION_DURATION = 350
 
 export function ForWho() {
-  const totalCards = industries.length
-  // Clone first 2 and last 2 cards for infinite loop
-  const clonedIndustries = [
-    ...industries.slice(-2), // Last 2 at start
-    ...industries,
-    ...industries.slice(0, 2), // First 2 at end
-  ]
-  
-  // Start at index 2 (first real card after 2 clones)
-  const [currentIndex, setCurrentIndex] = useState(2)
-  const [isTransitioning, setIsTransitioning] = useState(true)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const [containerWidth, setContainerWidth] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  const trackRef = useRef<HTMLDivElement>(null)
   const touchStartX = useRef<number | null>(null)
 
-  // Calculate the translateX to center the current card
-  const getTranslateX = useCallback((index: number) => {
-    if (containerWidth === 0) return 0
-    // Center offset: half of container minus half of card
-    const centerOffset = (containerWidth - CARD_WIDTH) / 2
-    // Position of current card
-    const cardPosition = index * (CARD_WIDTH + CARD_GAP)
-    return centerOffset - cardPosition
-  }, [containerWidth])
+  const totalCards = industries.length
+  const isAtStart = currentIndex === 0
+  const isAtEnd = currentIndex === totalCards - 1
 
-  // ResizeObserver to recalculate on window resize
+  // Calculate translateX to center the current card
+  const getTranslateX = useCallback(() => {
+    if (containerWidth === 0) return 0
+    const centerOffset = (containerWidth - CARD_SIZE) / 2
+    const cardPosition = currentIndex * (CARD_SIZE + CARD_GAP)
+    return centerOffset - cardPosition
+  }, [containerWidth, currentIndex])
+
+  // Update container width on resize
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -113,50 +76,36 @@ export function ForWho() {
     return () => resizeObserver.disconnect()
   }, [])
 
-  // Handle silent jump when hitting a clone
-  useEffect(() => {
-    if (!isTransitioning) {
-      // After transition completes, check if we need to jump
-      if (currentIndex <= 1) {
-        // At clone of last cards, jump to real last cards
-        setIsTransitioning(false)
-        setCurrentIndex(currentIndex + totalCards)
-      } else if (currentIndex >= totalCards + 2) {
-        // At clone of first cards, jump to real first cards
-        setIsTransitioning(false)
-        setCurrentIndex(currentIndex - totalCards)
-      }
-    }
-  }, [currentIndex, isTransitioning, totalCards])
+  const goTo = (index: number) => {
+    if (isTransitioning) return
+    if (index < 0 || index > totalCards - 1) return
 
-  const goToCard = (index: number) => {
     setIsTransitioning(true)
     setCurrentIndex(index)
-    
-    // After transition, allow silent jump check
+
     setTimeout(() => {
       setIsTransitioning(false)
-    }, 400)
+    }, TRANSITION_DURATION)
   }
 
-  const goNext = () => goToCard(currentIndex + 1)
-  const goPrev = () => goToCard(currentIndex - 1)
-
-  // Get actual index for dots (0 to totalCards-1)
-  const getActualIndex = () => {
-    let actual = currentIndex - 2
-    if (actual < 0) actual = totalCards + actual
-    if (actual >= totalCards) actual = actual - totalCards
-    return actual
+  const goNext = () => {
+    if (isAtEnd) return
+    goTo(currentIndex + 1)
   }
 
-  // Touch handlers for swipe (min 50px)
+  const goPrev = () => {
+    if (isAtStart) return
+    goTo(currentIndex - 1)
+  }
+
+  // Touch handlers for swipe
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isTransitioning) return
     touchStartX.current = e.touches[0].clientX
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return
+    if (touchStartX.current === null || isTransitioning) return
     const touchEndX = e.changedTouches[0].clientX
     const diff = touchStartX.current - touchEndX
 
@@ -170,8 +119,9 @@ export function ForWho() {
     touchStartX.current = null
   }
 
-  // Click animation for buttons - preserve translateY
-  const handleButtonClick = (callback: () => void) => (e: React.MouseEvent<HTMLButtonElement>) => {
+  // Click animation for buttons
+  const handleButtonClick = (callback: () => void, disabled: boolean) => (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) return
     const button = e.currentTarget
     button.classList.add('scale-[0.88]')
     setTimeout(() => {
@@ -194,37 +144,37 @@ export function ForWho() {
         </h2>
       </div>
 
-      {/* Slider Container - full width for peek effect */}
+      {/* Slider Container */}
       <div className="mt-8 relative" ref={containerRef}>
         {/* Cards Track */}
         <div 
           className="flex py-4"
-          ref={trackRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           style={{
-            transform: `translateX(${getTranslateX(currentIndex)}px)`,
-            transition: isTransitioning ? 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none',
+            transform: `translateX(${getTranslateX()}px)`,
+            transition: `transform ${TRANSITION_DURATION}ms cubic-bezier(0.25, 0.1, 0.25, 1)`,
           }}
         >
-          {clonedIndustries.map((industry, index) => {
+          {industries.map((industry, index) => {
             const isActive = index === currentIndex
 
             return (
               <div
-                key={`${industry.title}-${index}`}
+                key={industry.title}
                 className="flex-shrink-0"
                 style={{
-                  width: CARD_WIDTH,
-                  height: CARD_WIDTH,
+                  width: CARD_SIZE,
+                  height: CARD_SIZE,
                   marginRight: CARD_GAP,
                 }}
               >
                 <div 
-                  className="w-full h-full bg-white border border-foreground p-6 flex flex-col transition-all duration-300"
+                  className="w-full h-full bg-white border border-foreground p-6 flex flex-col"
                   style={{
-                    transform: isActive ? 'scale(1)' : 'scale(0.96)',
+                    transform: isActive ? 'scale(1)' : 'scale(0.95)',
                     opacity: isActive ? 1 : 0.5,
+                    transition: `transform ${TRANSITION_DURATION}ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity ${TRANSITION_DURATION}ms cubic-bezier(0.25, 0.1, 0.25, 1)`,
                   }}
                 >
                   {/* Title */}
@@ -251,11 +201,16 @@ export function ForWho() {
           })}
         </div>
 
-        {/* Navigation Arrows - circular outlined buttons, vertically centered */}
+        {/* Navigation Arrows */}
         <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none px-4 md:px-8">
           <button
-            onClick={handleButtonClick(goPrev)}
-            className="pointer-events-auto w-8 h-8 rounded-full border border-foreground flex items-center justify-center transition-all duration-200 bg-white hover:bg-foreground hover:text-background"
+            onClick={handleButtonClick(goPrev, isAtStart || isTransitioning)}
+            disabled={isAtStart || isTransitioning}
+            className={`pointer-events-auto w-8 h-8 rounded-full border border-foreground flex items-center justify-center transition-all duration-200 bg-white ${
+              isAtStart
+                ? 'opacity-30 cursor-not-allowed'
+                : 'hover:bg-foreground hover:text-background'
+            }`}
             aria-label="Poprzedni"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -263,8 +218,13 @@ export function ForWho() {
             </svg>
           </button>
           <button
-            onClick={handleButtonClick(goNext)}
-            className="pointer-events-auto w-8 h-8 rounded-full border border-foreground flex items-center justify-center transition-all duration-200 bg-white hover:bg-foreground hover:text-background"
+            onClick={handleButtonClick(goNext, isAtEnd || isTransitioning)}
+            disabled={isAtEnd || isTransitioning}
+            className={`pointer-events-auto w-8 h-8 rounded-full border border-foreground flex items-center justify-center transition-all duration-200 bg-white ${
+              isAtEnd
+                ? 'opacity-30 cursor-not-allowed'
+                : 'hover:bg-foreground hover:text-background'
+            }`}
             aria-label="Następny"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -278,9 +238,10 @@ export function ForWho() {
           {industries.map((_, index) => (
             <button
               key={index}
-              onClick={() => goToCard(index + 2)}
+              onClick={() => goTo(index)}
+              disabled={isTransitioning}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                getActualIndex() === index
+                currentIndex === index
                   ? 'bg-foreground'
                   : 'bg-foreground/30'
               }`}
