@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 
 type PackageKey = "starter" | "standard" | "premium"
 
@@ -164,8 +164,10 @@ const packages: PackageData[] = [
 export function Services() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const [hasAnimated, setHasAnimated] = useState(false)
+  const [standardVisible, setStandardVisible] = useState(false)
+  const [sideCardsVisible, setSideCardsVisible] = useState(false)
+  const [settleAnimation, setSettleAnimation] = useState(false)
   const [openModal, setOpenModal] = useState<PackageKey | null>(null)
-  const shouldReduceMotion = useReducedMotion()
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -173,10 +175,23 @@ export function Services() {
         entries.forEach((entry) => {
           if (entry.isIntersecting && !hasAnimated) {
             setHasAnimated(true)
+            
+            // Phase 1: Standard card slides up
+            setStandardVisible(true)
+            
+            // Phase 2 (300ms after): Side cards slide in
+            setTimeout(() => {
+              setSideCardsVisible(true)
+            }, 300)
+            
+            // Phase 3 (after all cards land): Settle animation
+            setTimeout(() => {
+              setSettleAnimation(true)
+            }, 900)
           }
         })
       },
-      { threshold: 0.2 }
+      { threshold: 0.3 }
     )
 
     if (sectionRef.current) {
@@ -240,22 +255,53 @@ export function Services() {
 
         {/* Cards */}
         <div className="mt-12 grid gap-6 lg:grid-cols-3">
-          {packages.map((pkg, index) => (
-            <motion.div
+          {packages.map((pkg, index) => {
+            const isStandard = index === 1
+            const isStarter = index === 0
+            const isPremium = index === 2
+
+            let animationStyle: React.CSSProperties = {}
+            
+            if (isStandard) {
+              animationStyle = {
+                opacity: standardVisible ? 1 : 0,
+                transform: standardVisible 
+                  ? `translateY(0) ${settleAnimation ? 'scaleY(1)' : 'scaleY(1)'}`
+                  : 'translateY(60px)',
+                transition: 'opacity 0.6s cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)',
+              }
+              if (settleAnimation) {
+                animationStyle.animation = 'settleY 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)'
+              }
+            } else if (isStarter) {
+              animationStyle = {
+                opacity: sideCardsVisible ? 1 : 0,
+                transform: sideCardsVisible ? 'translateX(0)' : 'translateX(-80px)',
+                transition: 'opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)',
+              }
+              if (settleAnimation) {
+                animationStyle.animation = 'settleX 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)'
+              }
+            } else if (isPremium) {
+              animationStyle = {
+                opacity: sideCardsVisible ? 1 : 0,
+                transform: sideCardsVisible ? 'translateX(0)' : 'translateX(80px)',
+                transition: 'opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)',
+              }
+              if (settleAnimation) {
+                animationStyle.animation = 'settleX 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)'
+              }
+            }
+
+            return (
+            <div
               key={pkg.key}
-              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, filter: "blur(2px)" }}
-              animate={hasAnimated ? { opacity: 1, filter: "blur(0px)" } : {}}
-              transition={{
-                duration: 0.5,
-                delay: index * 0.1,
-                ease: [0.25, 0.1, 0.25, 1],
-              }}
               className={`relative flex flex-col bg-[#FAF9F6] p-8 ${
                 pkg.highlighted 
                   ? "border-[1.5px] border-[#111]" 
                   : "border border-[#d0cfc9]"
               }`}
-              style={{ borderRadius: 0 }}
+              style={{ borderRadius: 0, ...animationStyle }}
             >
               {/* Popular badge */}
               {pkg.highlighted && (
@@ -323,11 +369,9 @@ export function Services() {
               </button>
 
               {/* CTA Button */}
-              <motion.button
+              <button
                 onClick={() => handleSelectPackage(pkg.name)}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
-                transition={{ duration: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
-                className={`group flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-medium transition-all duration-300 ${
+                className={`group flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-medium transition-all duration-300 hover:scale-[1.02] ${
                   pkg.highlighted
                     ? "bg-[#111] text-white hover:bg-[#333]"
                     : "border-[1.5px] border-[#111] bg-transparent text-[#111] hover:bg-[#111] hover:text-white"
@@ -335,9 +379,10 @@ export function Services() {
               >
                 <span>WYBIERZ</span>
                 <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
-              </motion.button>
-            </motion.div>
-          ))}
+              </button>
+            </div>
+            )
+          })}
         </div>
 
         {/* Recommendation text */}
@@ -367,9 +412,9 @@ export function Services() {
 
             {/* Modal Card */}
             <motion.div
-              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-              animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97 }}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
               transition={{
                 duration: openModal ? 0.35 : 0.2,
                 ease: openModal ? [0.34, 1.1, 0.64, 1] : [0.25, 0.1, 0.25, 1],
@@ -484,19 +529,30 @@ export function Services() {
               </p>
 
               {/* CTA Button */}
-              <motion.button
+              <button
                 onClick={() => handleSelectPackage(currentPackage.name, true)}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.97 }}
-                transition={{ duration: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
-                className="group mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-[#111] py-4 text-[14px] font-medium uppercase text-white transition-colors duration-300 hover:bg-[#333]"
+                className="group mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-[#111] py-4 text-[14px] font-medium uppercase text-white transition-all duration-300 hover:bg-[#333] hover:scale-[1.02]"
               >
                 <span>WYBIERZ TEN PAKIET</span>
                 <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
-              </motion.button>
+              </button>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
+      <style jsx>{`
+        @keyframes settleY {
+          0% { transform: scaleY(1); }
+          50% { transform: scaleY(1.015); }
+          100% { transform: scaleY(1); }
+        }
+        @keyframes settleX {
+          0% { transform: scaleX(1); }
+          50% { transform: scaleX(1.01); }
+          100% { transform: scaleX(1); }
+        }
+      `}</style>
     </section>
   )
 }
